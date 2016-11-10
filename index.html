@@ -1,0 +1,143 @@
+<style>
+video#bgvid {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    min-width: 100%;
+    min-height: 100%;
+    width: auto;
+    height: auto;
+    z-index: -100;
+    -ms-transform: translateX(-50%) translateY(-50%);
+    -moz-transform: translateX(-50%) translateY(-50%);
+    -webkit-transform: translateX(-50%) translateY(-50%);
+    transform: translateX(-50%) translateY(-50%);
+    background-size: cover;
+}
+html {
+  height: 100%;
+}
+body {
+  height: 100%;
+  margin: 0;
+  color: #DDDDDD;
+  font-size: 5vw;
+}
+#myflex {
+  position: fixed;
+  display: flex;
+  bottom: 0px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(15,15,15,0.5);
+}
+</style>
+<div id="myflex">
+  <pre id="maze"></pre>
+</div>
+<audio id="train" loop control src="sonata_in_g_major_carl_friedrich_abel.mp3" preload="auto"></audio>
+<video playsinline autoplay muted loop id="bgvid">
+    <source src="background.mp4" type="video/mp4">
+</video>
+<script>
+  'use strict'
+  const maze = String.raw`
+     |   |    __/   /
+      \  \  |/     ||
+    | |  |||/     ||
+    | \/ /       /|
+    \\/  |      ||
+     \\  \/  __//
+      ||  \\//   |
+    |  \\ ///  ///
+    |  |||====//
+    \\  |||//
+    |===|||\
+         |||
+        | ||
+        || |\
+       /|||||\
+      /||||||\
+  `
+
+  let map = maze.split('\n').map(line => line.split(''))
+  let player = {x: 8, y: 16, char: '@'}
+  let squirrel = {x: 10, y: 8, char: 's', tiredness: 0}
+  let entities = [player, squirrel]
+  let tiles = {
+    '|': {walkable: true},
+    '_': {walkable: true},
+    '-': {walkable: true},
+    '=': {walkable: true},
+    '\\': {walkable: true},
+    '/': {walkable: true},
+  }
+
+  document.getElementById('train').volume = 0.05;
+  document.getElementById('train').play()
+
+  function render (map) {
+    let newMap = mergeEntitiesWithMap(entities, map)
+    document.getElementById('maze').innerHTML =
+    newMap.map(characters => characters.join('')).join('\n')
+  }
+
+  function mergeEntitiesWithMap(entities, map) {
+    let newMap = maze.split('\n').map(line => line.split(''))
+    entities.forEach(e => newMap[e.y][e.x] = e.char)
+    return newMap
+  }
+
+  render(map)
+
+  const keyToDirection = {
+    37: {x: -1, y: 0},
+    38: {x: 0, y: -1},
+    39: {x: 1, y: 0},
+    40: {x: 0, y: 1}
+  }
+
+  document.onkeydown = function (e) {
+    const direction = keyToDirection[e.keyCode]
+    if (direction) {
+      e.preventDefault()
+      move(direction)
+    }
+  }
+
+  const addPoints = (point1, point2) =>
+  ({x: point1.x + point2.x, y: point1.y + point2.y})
+
+  function move(direction) {
+   const newPosition = addPoints(player, direction)
+   const newCharacter = map[newPosition.y][newPosition.x]
+   if (tiles[newCharacter] && tiles[newCharacter].walkable)
+    teleportEntity(player, newPosition)
+   if (squirrel.x === player.x && squirrel.y === player.y)
+    alert("Congrats! You caught the squirrel!")
+   document.getElementById('train').volume = (1/(player.y + 1))+0.25;
+   if (squirrel.tiredness < 10) {
+    teleportEntity(squirrel, randomMoveFromPos(squirrel))
+    squirrel.tiredness++
+  } else {
+    squirrel.tiredness = divideRandom(5)
+  }
+ }
+
+ function randomMoveFromPos ({x,y}) {
+   const newX = divideRandom(3) - 1
+   const newY = divideRandom(3) - 1
+   return {x: x + newX, y: y + newY}
+ }
+
+ function divideRandom (possibilities) {
+   const chunk = 1 / possibilities
+   return Math.floor(Math.random() / chunk)
+ }
+
+ function teleportEntity (entity, {x,y}) {
+   entity.x = x
+   entity.y = y
+   render(map)
+ }
+</script>
